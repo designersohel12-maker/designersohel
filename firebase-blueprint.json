@@ -1,0 +1,173 @@
+{
+  "entities": {
+    "BestWork": {
+      "title": "BestWork",
+      "description": "Independent visual work item displayed in the Home Best Work section.",
+      "type": "object",
+      "properties": {
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL or data URI of the image or video asset.",
+          "minLength": 1,
+          "maxLength": 900000
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Media format type.",
+          "enum": ["image", "video"]
+        },
+        "order": {
+          "type": "integer",
+          "description": "Display sort order."
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Access visibility state.",
+          "enum": ["public", "private"]
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase UID of the creator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["mediaUrl", "mediaType", "order", "visibility", "ownerId", "createdAt", "updatedAt"]
+    },
+    "PortfolioProject": {
+      "title": "PortfolioProject",
+      "description": "Visual design or motion project displayed in the Portfolio section.",
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "description": "Portfolio category identifier.",
+          "enum": ["motion", "social", "print"]
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL or data URI of the image or video asset.",
+          "minLength": 1,
+          "maxLength": 900000
+        },
+        "mediaType": {
+          "type": "string",
+          "description": "Media format type.",
+          "enum": ["image", "video"]
+        },
+        "order": {
+          "type": "integer",
+          "description": "Display sort order within category."
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Access visibility state.",
+          "enum": ["public", "private"]
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase UID of the creator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["category", "mediaUrl", "mediaType", "order", "visibility", "ownerId", "createdAt", "updatedAt"]
+    },
+    "SiteProfile": {
+      "title": "SiteProfile",
+      "description": "Hero portrait photo and public visual configuration for MD. Sohel Rana.",
+      "type": "object",
+      "properties": {
+        "heroPhotoUrl": {
+          "type": "string",
+          "description": "URL or data URI of the personal portrait photo.",
+          "minLength": 1,
+          "maxLength": 900000
+        },
+        "visibility": {
+          "type": "string",
+          "description": "Access visibility state.",
+          "enum": ["public", "private"]
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase UID of the owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["heroPhotoUrl", "visibility", "ownerId", "createdAt", "updatedAt"]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Trusted admin registry document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Admin user UID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": ["uid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/best_works/{workId}": {
+      "schema": { "$ref": "#/entities/BestWork" },
+      "description": "Stores independent Best Work items shown in the Home section."
+    },
+    "/portfolio_projects/{projectId}": {
+      "schema": { "$ref": "#/entities/PortfolioProject" },
+      "description": "Stores Portfolio works categorized under motion, social, and print."
+    },
+    "/site_profile/{profileId}": {
+      "schema": { "$ref": "#/entities/SiteProfile" },
+      "description": "Stores hero portrait photo configuration."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Trusted admin marker documents."
+    }
+  }
+}

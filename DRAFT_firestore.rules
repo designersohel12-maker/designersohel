@@ -1,0 +1,174 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-Deny Catch-All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'designersohel12@gmail.com' ||
+        request.auth.token.email == 'soheldesigner90@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Entity Validation Blueprint: BestWork
+    function isValidBestWork(data) {
+      return data.keys().hasAll(['mediaUrl', 'mediaType', 'order', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['mediaUrl', 'mediaType', 'order', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.mediaUrl is string && data.mediaUrl.size() >= 1 && data.mediaUrl.size() <= 900000 &&
+        data.mediaType is string && data.mediaType.size() <= 16 && (data.mediaType == 'image' || data.mediaType == 'video') &&
+        data.order is int && data.order >= 0 && data.order <= 100000 &&
+        data.visibility is string && data.visibility.size() <= 16 && (data.visibility == 'public' || data.visibility == 'private') &&
+        data.ownerId is string && isValidId(data.ownerId) && data.ownerId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Entity Validation Blueprint: PortfolioProject
+    function isValidPortfolioProject(data) {
+      return data.keys().hasAll(['category', 'mediaUrl', 'mediaType', 'order', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['category', 'mediaUrl', 'mediaType', 'order', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.category is string && data.category.size() <= 16 && (data.category == 'motion' || data.category == 'social' || data.category == 'print') &&
+        data.mediaUrl is string && data.mediaUrl.size() >= 1 && data.mediaUrl.size() <= 900000 &&
+        data.mediaType is string && data.mediaType.size() <= 16 && (data.mediaType == 'image' || data.mediaType == 'video') &&
+        data.order is int && data.order >= 0 && data.order <= 100000 &&
+        data.visibility is string && data.visibility.size() <= 16 && (data.visibility == 'public' || data.visibility == 'private') &&
+        data.ownerId is string && isValidId(data.ownerId) && data.ownerId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Entity Validation Blueprint: SiteProfile
+    function isValidSiteProfile(data) {
+      return data.keys().hasAll(['heroPhotoUrl', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['heroPhotoUrl', 'visibility', 'ownerId', 'createdAt', 'updatedAt']) &&
+        data.heroPhotoUrl is string && data.heroPhotoUrl.size() >= 1 && data.heroPhotoUrl.size() <= 900000 &&
+        data.visibility is string && data.visibility.size() <= 16 && (data.visibility == 'public' || data.visibility == 'private') &&
+        data.ownerId is string && isValidId(data.ownerId) && data.ownerId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Collection 1: /best_works/{workId}
+    match /best_works/{workId} {
+      allow get: if isValidId(workId) && (
+        existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid);
+      allow create: if isVerifiedUser() &&
+        isValidId(workId) &&
+        isValidBestWork(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(workId) &&
+        isValidBestWork(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isAdmin() && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['mediaUrl', 'mediaType', 'order', 'visibility', 'updatedAt'])
+        );
+      allow delete: if isVerifiedUser() &&
+        isValidId(workId) &&
+        existing().ownerId == request.auth.uid &&
+        isAdmin();
+    }
+
+    // Collection 2: /portfolio_projects/{projectId}
+    match /portfolio_projects/{projectId} {
+      allow get: if isValidId(projectId) && (
+        existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid);
+      allow create: if isVerifiedUser() &&
+        isValidId(projectId) &&
+        isValidPortfolioProject(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(projectId) &&
+        isValidPortfolioProject(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isAdmin() && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['category', 'mediaUrl', 'mediaType', 'order', 'visibility', 'updatedAt'])
+        );
+      allow delete: if isVerifiedUser() &&
+        isValidId(projectId) &&
+        existing().ownerId == request.auth.uid &&
+        isAdmin();
+    }
+
+    // Collection 3: /site_profile/{profileId}
+    match /site_profile/{profileId} {
+      allow get: if isValidId(profileId) && (
+        existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if existing().visibility == 'public' ||
+        (isVerifiedUser() && existing().ownerId == request.auth.uid);
+      allow create: if isVerifiedUser() &&
+        isValidId(profileId) &&
+        isValidSiteProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        isAdmin();
+      allow update: if isVerifiedUser() &&
+        isValidId(profileId) &&
+        isValidSiteProfile(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        isAdmin() && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['heroPhotoUrl', 'visibility', 'updatedAt'])
+        );
+      allow delete: if isVerifiedUser() &&
+        isValidId(profileId) &&
+        existing().ownerId == request.auth.uid &&
+        isAdmin();
+    }
+
+    // Collection 4: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isVerifiedUser() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+  }
+}
